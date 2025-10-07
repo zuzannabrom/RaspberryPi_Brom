@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Parametry głosu</title>
+</head>
+<body>
+    <h1>🎼 Analiza dźwięku</h1>
+
+    <!-- Dropdown z wyborem dźwięku -->
+    <label for="noteSelect">Wybierz dźwięk:</label>
+    <select id="noteSelect">
+        <option value="261.63">C</option>
+        <option value="293.66">D</option>
+        <option value="329.63">E</option>
+        <option value="349.23">F</option>
+        <option value="392.00">G</option>
+        <option value="440.00">A</option>
+        <option value="493.88">H</option>
+    </select>
+
+    <!-- Przycisk do odtwarzania dźwięku -->
+    <button onclick="playNote()">🔊 Odtwórz dźwięk</button>
+
+    <!-- Przycisk do nagrywania -->
+    <button onclick="startRecording()">🎙️ Nagraj dźwięk</button>
+    <button onclick="stopRecording()">⏹️ Stop</button>
+
+    <!-- Podgląd nagrania -->
+    <audio id="recordedAudio" controls style="display:none;"></audio>
+
+    <!-- Przycisk do wysłania nagrania do serwera -->
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/upload">
+        <input type="file" id="audioFile" name="audio" hidden>
+        <input type="hidden" id="targetFreqInput" name="target_freq">
+        <button type="submit">📤 Wyślij do analizy</button>
+    </form>
+
+    <!-- Wyświetlanie wyników analizy -->
+    {% if analiza %}
+        <h2>📊 Wyniki analizy:</h2>
+        <ul>
+            {% for klucz, wartosc in analiza.items() %}
+                <li><strong>{{ klucz }}:</strong> {{ wartosc }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <script>
+        // 1. Odtwarzanie dźwięku przez Web Audio API
+        function playNote() {
+            const freq = parseFloat(document.getElementById("noteSelect").value);
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 1.5); // odtwarzaj przez 1.5s
+        }
+
+        // 2. Nagrywanie dźwięku przez mikrofon
+        let mediaRecorder;
+        let audioChunks = [];
+
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+
+            audioChunks = [];
+
+            mediaRecorder.addEventListener("dataavailable", event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener("stop", () => {
+                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                const audio = document.getElementById("recordedAudio");
+                audio.src = audioUrl;
+                audio.style.display = "block";
+
+                // Wstawienie do inputa w formularzu
+                const fileInput = document.getElementById("audioFile");
+                const file = new File([audioBlob], "input.wav", { type: "audio/wav" });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+
+                // Przekazanie wybranej częstotliwości
+                document.getElementById("targetFreqInput").value = document.getElementById("noteSelect").value;
+            });
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+        }
+    </script>
+
+    <br><br>
+    <a href="{{ url_for('index') }}">⬅️ Wróć do nagrywania</a>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Wirtualny nauczyciel wokalny</title>
+</head>
+<body>
+    <h1>Nauczyciel wokalny</h1>
+
+    {% if status == "nagrywa" %}
+        <p style="color:red;">Nagrywanie…</p>
+    {% elif status == "done" %}
+        <p style="color:green;">Udało się super</p>
+    {% endif %}
+
+    <form action="/nagraj" method="POST">
+        <button type="submit">Kliknij nagraj i śpiewaj przez 5 sekund</button>
+    </form>
+
+    {% if nagrany %}
+        <h2>Odtwórz swoje nagranie:</h2>
+        <audio controls>
+            <source src="{{ url_for('static', filename='recordings/output.wav') }}" type="audio/wav">
+            Twoja przeglądarka nie wspiera odtwarzacza audio.
+        </audio>
+
+        <form action="/usun" method="POST" style="margin-top: 10px;">
+            <button type="submit" style="color:red;">🗑️ Usuń nagranie</button>
+        </form>
+    {% endif %}
+
+    <form action="{{ url_for('parametry') }}" method="GET">
+    <button type="submit">🔍 Przejdź do parametrów</button>
+    </form>
+
+        <form action="{{ url_for('parametry2') }}" method="GET">
+    <button type="submit">🔍 Przejdź do parametrów 2</button>
+    </form>
+
+
+</body>
+</html>
