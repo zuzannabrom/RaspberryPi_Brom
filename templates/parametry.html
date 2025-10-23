@@ -2,78 +2,140 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Parametry głosu</title>
+    <title>🎼 Analiza śpiewu – Metoda ATSIP</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #fafafa;
+            text-align: center;
+            padding: 30px;
+            color: #222;
+        }
+        h1 { color: #333; }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            border: none;
+            background: #4A90E2;
+            color: white;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover { background: #357ABD; }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+        }
+        th {
+            background: #4A90E2;
+            color: white;
+        }
+        td:first-child { text-align: left; }
+        .overall {
+            font-size: 1.3rem;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        #chartContainer {
+            margin: 40px auto;
+            width: 90%;
+            height: 400px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>🎼 Analiza dźwięku</h1>
+    <h1>🎤 Analiza porównawcza z nagraniem referencyjnym</h1>
+    <p>Porównaj swoje nagranie z <strong>ref.wav.wav</strong> i sprawdź jakość wykonania w 7 parametrach wg metody ATSIP (2018).</p>
 
-    <!-- Dropdown z wyborem dźwięku -->
-    <label for="noteSelect">Wybierz dźwięk:</label>
-    <select id="noteSelect">
-        <option value="261.63">C</option>
-        <option value="293.66">D</option>
-        <option value="329.63">E</option>
-        <option value="349.23">F</option>
-        <option value="392.00">G</option>
-        <option value="440.00">A</option>
-        <option value="493.88">H</option>
-    </select>
+    <button onclick="startRecording()">🎙️ Nagraj wykonanie</button>
+    <button onclick="stopRecording()">⏹️ Zatrzymaj</button>
 
-    <!-- Przycisk do odtwarzania dźwięku -->
-    <button onclick="playNote()">🔊 Odtwórz dźwięk</button>
+    <audio id="recordedAudio" controls style="display:none; margin-top:20px;"></audio>
 
-    <!-- Przycisk do nagrywania -->
-    <button onclick="startRecording()">🎙️ Nagraj dźwięk</button>
-    <button onclick="stopRecording()">⏹️ Stop</button>
-
-    <!-- Podgląd nagrania -->
-    <audio id="recordedAudio" controls style="display:none;"></audio>
-
-    <!-- Przycisk do wysłania nagrania do serwera -->
-    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/upload">
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/analizuj_parametry" style="margin-top:20px;">
         <input type="file" id="audioFile" name="audio" hidden>
-        <input type="hidden" id="targetFreqInput" name="target_freq">
         <button type="submit">📤 Wyślij do analizy</button>
     </form>
 
-    <!-- Wyświetlanie wyników analizy -->
     {% if analiza %}
-        <h2>📊 Wyniki analizy:</h2>
-        <ul>
+        <h2>📊 Wyniki analizy (7 parametrów):</h2>
+        <table>
+            <tr><th>Parametr</th><th>Wynik (%)</th></tr>
             {% for klucz, wartosc in analiza.items() %}
-                <li><strong>{{ klucz }}:</strong> {{ wartosc }}</li>
+                {% if "Overall" not in klucz %}
+                    <tr><td>{{ klucz }}</td><td>{{ wartosc }}</td></tr>
+                {% endif %}
             {% endfor %}
-        </ul>
+        </table>
+
+        <!-- bezpieczne przekazanie danych JSON -->
+        <script id="analiza-data" type="application/json">
+            {{ analiza | tojson }}
+        </script>
+
+        <div id="chartContainer">
+            <canvas id="chart" width="700" height="300"></canvas>
+        </div>
+
+        <script>
+            // Wczytanie danych z ukrytego skryptu JSON
+            const dataAnalizy = JSON.parse(document.getElementById('analiza-data').textContent);
+
+            const labels = [];
+            const values = [];
+
+            for (const [k, v] of Object.entries(dataAnalizy)) {
+                if (k.includes("Overall")) continue;
+                const num = parseFloat(String(v).replace("%", "").replace("/ 100", "").trim());
+                if (!Number.isNaN(num)) {
+                    labels.push(k);
+                    values.push(num);
+                }
+            }
+
+            // Tworzenie wykresu
+            const ctx = document.getElementById("chart").getContext("2d");
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Wynik (%)",
+                        data: values,
+                        backgroundColor: "#4A90E2"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.formattedValue} %` } }
+                    }
+                }
+            });
+        </script>
+
+        <p class="overall">⭐ Ocena ogólna: {{ analiza["⭐ Overall"] }}</p>
     {% endif %}
 
     <script>
-        // 1. Odtwarzanie dźwięku przez Web Audio API
-        function playNote() {
-            const freq = parseFloat(document.getElementById("noteSelect").value);
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            oscillator.connect(audioCtx.destination);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 1.5); // odtwarzaj przez 1.5s
-        }
-
-        // 2. Nagrywanie dźwięku przez mikrofon
         let mediaRecorder;
         let audioChunks = [];
 
         async function startRecording() {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-
             audioChunks = [];
 
-            mediaRecorder.addEventListener("dataavailable", event => {
-                audioChunks.push(event.data);
-            });
-
+            mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
             mediaRecorder.addEventListener("stop", () => {
                 const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
                 const audioUrl = URL.createObjectURL(audioBlob);
@@ -82,26 +144,23 @@
                 audio.src = audioUrl;
                 audio.style.display = "block";
 
-                // Wstawienie do inputa w formularzu
-                const fileInput = document.getElementById("audioFile");
                 const file = new File([audioBlob], "input.wav", { type: "audio/wav" });
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-
-                // Przekazanie wybranej częstotliwości
-                document.getElementById("targetFreqInput").value = document.getElementById("noteSelect").value;
+                document.getElementById("audioFile").files = dataTransfer.files;
             });
+
+            mediaRecorder.start();
         }
 
         function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            if (mediaRecorder && mediaRecorder.state === "recording") {
                 mediaRecorder.stop();
             }
         }
     </script>
 
     <br><br>
-    <a href="{{ url_for('index') }}">⬅️ Wróć do nagrywania</a>
+    <a href="/">⬅️ Wróć</a>
 </body>
 </html>

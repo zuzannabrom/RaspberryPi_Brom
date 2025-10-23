@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Analiza czystości tonu</title>
+</head>
+<body>
+    <h1>🎵 Analiza czystości tonu</h1>
+
+    <!-- Wybór dźwięku -->
+    <label for="noteSelect">Wybierz dźwięk:</label>
+    <select id="noteSelect">
+        <option value="" selected disabled>-- wybierz --</option>
+        <option value="261.63">C</option>
+        <option value="293.66">D</option>
+        <option value="329.63">E</option>
+        <option value="349.23">F</option>
+        <option value="392.00">G</option>
+        <option value="440.00">A</option>
+        <option value="493.88">H</option>
+    </select>
+
+    <br><br>
+    <button onclick="playNote()">🔊 Odtwórz wzorzec</button>
+    <button onclick="record()">🎙️ Nagraj (3 sekundy)</button>
+    <button onclick="submitAnalysis()">📤 Prześlij do analizy</button>
+
+    <audio id="recordedAudio" controls style="display:none; margin-top: 10px;"></audio>
+
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/analizuj_parametry2">
+        <input type="file" id="audioFile" name="audio" hidden>
+        <input type="hidden" id="targetFreqInput" name="target_freq">
+    </form>
+
+    <script>
+        let recordedBlob = null;
+
+        function playNote() {
+            const freq = parseFloat(document.getElementById("noteSelect").value);
+            if (!freq) {
+                alert("Wybierz dźwięk!");
+                return;
+            }
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 1.5);
+        }
+
+        async function record() {
+            const freq = document.getElementById("noteSelect").value;
+            if (!freq) {
+                alert("Wybierz dźwięk!");
+                return;
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+            mediaRecorder.onstop = () => {
+                recordedBlob = new Blob(chunks, { type: "audio/webm" });
+                const audioUrl = URL.createObjectURL(recordedBlob);
+                const audio = document.getElementById("recordedAudio");
+                audio.src = audioUrl;
+                audio.style.display = "block";
+            };
+
+            mediaRecorder.start();
+            setTimeout(() => mediaRecorder.stop(), 3000);
+        }
+
+        function submitAnalysis() {
+            const freq = parseFloat(document.getElementById("noteSelect").value);
+            if (!freq || !recordedBlob) {
+                alert("Najpierw wybierz dźwięk i nagraj próbkę!");
+                return;
+            }
+
+            const file = new File([recordedBlob], "input_user.webm", { type: recordedBlob.type });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById("audioFile").files = dataTransfer.files;
+
+            document.getElementById("targetFreqInput").value = freq;
+            document.getElementById("uploadForm").submit();
+        }
+    </script>
+
+    {% if analiza %}
+        <h2>📊 Wyniki:</h2>
+        <ul>
+            {% for klucz, wartosc in analiza.items() %}
+                <li><strong>{{ klucz }}:</strong> {{ wartosc }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    {% if feedback %}
+        <h3>🗣️ Feedback:</h3>
+        <p>{{ feedback }}</p>
+    {% endif %}
+
+    {% if wykres_path %}
+        <h3>📈 Wykres czystości tonu:</h3>
+        <img src="{{ url_for('static', filename=wykres_path) }}" style="max-width:600px;">
+    {% endif %}
+
+    <br><br>
+    <a href="{{ url_for('index') }}">⬅️ Powrót</a>
+</body>
+</html>

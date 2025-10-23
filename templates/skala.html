@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Zakres wokalny (interaktywny)</title>
+    <style>
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 1.1rem;
+        }
+        select {
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Sprawdź swój zakres wokalny</h1>
+
+    <!-- Wybór płci -->
+    <h3>Wybierz swoją płeć:</h3>
+    <form method="POST" action="/analizuj_skale_manualnie">
+        <label>
+            <input type="radio" name="plec" value="kobieta" required> 👩 Kobieta
+        </label>
+        <label>
+            <input type="radio" name="plec" value="mezczyzna" required> 🧑 Mężczyzna
+        </label>
+
+        <br><br>
+
+        <!-- Najniższa nuta -->
+        <h3>Najniższy dźwięk jaki potrafisz zaśpiewać:</h3>
+        <select name="nuta_niska" required>
+            {% for note in nuty %}
+                <option value="{{ note[1] }}">{{ note[0] }} ({{ note[1] }} Hz)</option>
+            {% endfor %}
+        </select>
+        <button type="button" onclick="playSelected('nuta_niska')">🔊 Odtwórz</button>
+
+        <!-- Najwyższa nuta -->
+        <h3>Najwyższy dźwięk jaki potrafisz zaśpiewać:</h3>
+        <select name="nuta_wysoka" required>
+            {% for note in nuty %}
+                <option value="{{ note[1] }}">{{ note[0] }} ({{ note[1] }} Hz)</option>
+            {% endfor %}
+        </select>
+        <button type="button" onclick="playSelected('nuta_wysoka')">🔊 Odtwórz</button>
+
+        <br><br>
+        <button type="submit">📈 Sprawdź mój zakres głosu</button>
+    </form>
+
+    {% if wynik %}
+        <h2>📊 Twój zakres:</h2>
+        <p><strong>{{ wynik.nuta_niska }}</strong> ({{ wynik.niska_hz }} Hz) → 
+           <strong>{{ wynik.nuta_wysoka }}</strong> ({{ wynik.wysoka_hz }} Hz)</p>
+        <p><strong>Zakres:</strong> {{ wynik.zakres }} Hz</p>
+        <p><strong>Typ głosu:</strong> 🎶 {{ wynik.typ_glosu }}</p>
+    {% endif %}
+
+    <script>
+        function playSelected(selectName) {
+            const select = document.getElementsByName(selectName)[0];
+            const freq = parseFloat(select.value);
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 1.5);
+        }
+    </script>
+
+    <br><br>
+    <a href="/">⬅️ Wróć</a>
+</body>
+</html>
