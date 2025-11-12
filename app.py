@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 from scipy.fft import fft
 from pydub import AudioSegment  # do konwersji webm → wav
+from flask import jsonify # do sprawdzania skali - nuty
+import matplotlib.pyplot as plt # to do rysowania plotów w parametry - jeszcze nie ma dodanej tej opcji
 
 app = Flask(__name__)
 RECORD_DIR = "static/recordings"
@@ -122,6 +124,27 @@ def okresl_typ_glosu(plec, low, high):
             return "Nieokreślony (niski zakres dla mężczyzny)"
 
 
+@app.route("/sprawdz_nute", methods=["POST"])
+def sprawdz_nute():
+    if "audio" not in request.files:
+        return jsonify({"feedback": "Brak pliku audio!"}), 400
+
+    audio_file = request.files["audio"]
+    target_freq = float(request.form.get("target_freq", 0.0))
+
+    os.makedirs(RECORD_DIR, exist_ok=True)
+    webm_path = os.path.join(RECORD_DIR, "check_note_input.webm")
+    wav_path = os.path.join(RECORD_DIR, "check_note_input.wav")
+    audio_file.save(webm_path)
+
+    try:
+        AudioSegment.from_file(webm_path, format="webm").export(wav_path, format="wav")
+        _, feedback, _ = analiza_czystosci(wav_path, target_freq)
+        return jsonify({"feedback": feedback})
+    except Exception as e:
+        return jsonify({"feedback": f"Błąd: {str(e)}"}), 500
+
+
 # ---------------------- ANALIZA: PARAMETRY ----------------------
 @app.route("/analizuj_parametry", methods=["POST"])
 def analizuj_parametry():
@@ -136,8 +159,14 @@ def analizuj_parametry():
     ref_path = os.path.join("static", "reference", "ref.wav.wav")
 
     try:
-        wynik = analiza_parametrow(ref_path, user_path)
-        return render_template("parametry.html", analiza=wynik)
+        wynik, interpretacje = analiza_parametrow(ref_path, user_path)
+        wykres_file = rysuj_histogram_parametrow(wynik)
+        return render_template(
+            "parametry.html",
+            analiza=wynik,
+            interpretacje=interpretacje,
+            wykres_path=wykres_file
+        )
     except Exception as e:
         return f"Błąd analizy: {str(e)}", 500
 
@@ -146,7 +175,6 @@ def analiza_parametrow(ref_path, user_path):
     """
     Analiza śpiewu – metoda ATSIP (pełna wersja, 7 parametrów)
     """
-
     import numpy as np
     import librosa
 
@@ -252,7 +280,84 @@ def analiza_parametrow(ref_path, user_path):
         "⭐ Overall": f"{Overall:.2f} / 100"
     }
 
-    return wynik
+    # --- INTERPRETACJE ---
+    interpretacje = {
+        "🎵 Intonation": interpretuj(Intonation, "intonacja — trafność wysokości dźwięków"),
+        "⏱️ Rhythm": interpretuj(Rhythm, "rytm — zgodność tempa z wzorcem"),
+        "🌊 Vibrato": interpretuj(Vibrato, "vibrato — naturalne drganie wysokości"),
+        "🔊 Volume": interpretuj(Volume, "głośność — poziom dźwięku względem wzorca"),
+        "🧬 Voice Quality": interpretuj(VoiceQuality, "barwa i czystość dźwięku"),
+        "🗣️ Pronunciation": interpretuj(Pronunciation, "wymowa i artykulacja"),
+        "🔁 Pitch Dynamic Range": interpretuj(PitchDynamicRange, "zakres dynamiczny tonu")
+    }
+
+    return wynik, interpretacje
+
+
+def interpretuj(value, opis):
+    """Prosta interpretacja wyniku w %."""
+    percent = value * 100
+    if percent >= 85:
+        return f"🌟 Bardzo dobra {opis} (wynik: {percent:.1f}%)"
+    elif percent >= 60:
+        return f"👍 Dobra {opis}, ale można ją poprawić (wynik: {percent:.1f}%)"
+    elif percent >= 30:
+        return f"⚠️ Słaba {opis} – wymaga pracy (wynik: {percent:.1f}%)"
+    else:
+        return f"❌ Bardzo niska {opis} (wynik: {percent:.1f}%)"
+
+
+def rysuj_histogram_parametrow(wyniki, output_file="parametry_histogram.png"):
+    """Rysuje histogram w stylu artykułu ATSIP (2018)."""
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker as mtick
+    import os
+
+    param_keys = [
+        "🎵 Intonation", "⏱️ Rhythm", "🌊 Vibrato",
+        "🔊 Volume", "🧬 Voice Quality", "🗣️ Pronunciation",
+        "🔁 Pitch Dynamic Range"
+    ]
+    labels = [k.split(" ", 1)[-1] for k in param_keys]
+    values = [float(wyniki[k].replace(" %", "")) for k in param_keys]
+
+    plt.figure(figsize=(9, 5))
+    bars = plt.bar(
+        labels,
+        values,
+        color="0.2",            # ciemnoszary
+        edgecolor="black",
+        width=0.6
+    )
+
+    # Skala i opisy
+    plt.ylim(0, 100)
+    plt.ylabel("Ocena [%]", fontsize=11)
+    plt.title("Performance of individual perceptual parameters (ATSIP 2018 model)",
+              fontsize=12, pad=15)
+    plt.xticks(rotation=45, ha="right", fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
+
+    # Usunięcie siatki, styl publikacyjny
+    plt.grid(False)
+    plt.box(False)
+
+    # Wartości na słupkach (wewnątrz, białe)
+    for bar, val in zip(bars, values):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            val / 2,
+            f"{val:.0f}%",
+            ha="center", va="center",
+            color="white", fontsize=10, fontweight="bold"
+        )
+
+    plt.tight_layout()
+    save_path = os.path.join("static", output_file)
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    return output_file
 
 
 # ---------------------- ANALIZA: PARAMETRY 2 ----------------------

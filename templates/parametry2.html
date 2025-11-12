@@ -3,11 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <title>Analiza czystości tonu</title>
-</head>
-<body>
-    <h1>🎵 Analiza czystości tonu</h1>
+    <style>
+        /* ======== Pasek nawigacji ======== */
+        .navbar {
+            width: 100%;
+            background: linear-gradient(90deg, #000 0%, #111 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            width: 92%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-title {
+            font-size: 1.2rem;
+            color: #d4af37;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .nav-links a {
+            color: #f5f5f5;
+            text-decoration: none;
+            margin: 0 12px;
+            font-size: 0.95rem;
+            transition: color 0.25s, border-bottom 0.25s;
+            padding-bottom: 3px;
+        }
+        .nav-links a:hover {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+        .nav-links a.active {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
 
-    <!-- Wybór dźwięku -->
+        /* ======== Styl główny ======== */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #0a0a0a 0%, #000 80%);
+            color: #f5f5f5;
+            text-align: center;
+            padding: 40px;
+            letter-spacing: 0.2px;
+        }
+
+        h1 {
+            color: #d4af37;
+            font-size: 1.8rem;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+            margin-bottom: 15px;
+        }
+
+        label, p, select {
+            color: #ddd;
+            font-size: 1rem;
+        }
+
+        select {
+            background: #111;
+            color: #f7d774;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-top: 8px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 24px;
+            border: 1px solid #d4af37;
+            background: linear-gradient(145deg, #1a1a1a, #0c0c0c);
+            color: #d4af37;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.25);
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #2a2a2a, #111);
+            color: #fff3b0;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            margin: 35px 0;
+        }
+
+        audio {
+            margin-top: 15px;
+            border-radius: 6px;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+
+        a {
+            color: #f7d774;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        a:hover { color: #fff3b0; }
+
+        img {
+            margin-top: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        ul li {
+            margin: 6px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ======== Pasek nawigacji ======== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-title">🎼 Analiza Śpiewu</div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}">🏠 Strona główna</a>
+                <a href="{{ url_for('parametry2') }}" class="active">🎵 Analiza 1 dźwięku</a>
+                <a href="{{ url_for('parametry') }}">📊 Analiza parametrów</a>
+                <a href="{{ url_for('skala') }}">🎼 Skala muzyczna</a>
+            </div>
+        </div>
+    </nav>
+
+    <h1>Analiza czystości tonu</h1>
+
     <label for="noteSelect">Wybierz dźwięk:</label>
     <select id="noteSelect">
         <option value="" selected disabled>-- wybierz --</option>
@@ -21,11 +161,18 @@
     </select>
 
     <br><br>
-    <button onclick="playNote()">🔊 Odtwórz wzorzec</button>
-    <button onclick="record()">🎙️ Nagraj (3 sekundy)</button>
-    <button onclick="submitAnalysis()">📤 Prześlij do analizy</button>
+    <button onclick="playNote()">Odtwórz wzorzec</button>
+    <button onclick="record()">Nagraj (3 sekundy)</button>
 
-    <audio id="recordedAudio" controls style="display:none; margin-top: 10px;"></audio>
+    <hr>
+
+    <p><strong>Lub wybierz gotowe nagranie z dysku:</strong></p>
+    <input type="file" id="manualUpload" name="audioManual" accept="audio/*" onchange="handleManualUpload(this)">
+
+    <audio id="recordedAudio" controls style="display:none;"></audio>
+
+    <br><br>
+    <button onclick="submitAnalysis()">Prześlij do analizy</button>
 
     <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/analizuj_parametry2">
         <input type="file" id="audioFile" name="audio" hidden>
@@ -41,7 +188,6 @@
                 alert("Wybierz dźwięk!");
                 return;
             }
-
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             oscillator.type = 'sine';
@@ -76,14 +222,27 @@
             setTimeout(() => mediaRecorder.stop(), 3000);
         }
 
+        function handleManualUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            recordedBlob = file;
+            const audio = document.getElementById("recordedAudio");
+            const audioUrl = URL.createObjectURL(file);
+            audio.src = audioUrl;
+            audio.style.display = "block";
+        }
+
         function submitAnalysis() {
             const freq = parseFloat(document.getElementById("noteSelect").value);
             if (!freq || !recordedBlob) {
-                alert("Najpierw wybierz dźwięk i nagraj próbkę!");
+                alert("Najpierw wybierz dźwięk i nagraj lub wgraj próbkę!");
                 return;
             }
 
-            const file = new File([recordedBlob], "input_user.webm", { type: recordedBlob.type });
+            const file = recordedBlob instanceof File
+                ? recordedBlob
+                : new File([recordedBlob], "input_user.webm", { type: recordedBlob.type });
+
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             document.getElementById("audioFile").files = dataTransfer.files;
@@ -94,7 +253,7 @@
     </script>
 
     {% if analiza %}
-        <h2>📊 Wyniki:</h2>
+        <h2>Wyniki:</h2>
         <ul>
             {% for klucz, wartosc in analiza.items() %}
                 <li><strong>{{ klucz }}:</strong> {{ wartosc }}</li>
@@ -103,16 +262,16 @@
     {% endif %}
 
     {% if feedback %}
-        <h3>🗣️ Feedback:</h3>
+        <h3>Wnioski:</h3>
         <p>{{ feedback }}</p>
     {% endif %}
 
     {% if wykres_path %}
-        <h3>📈 Wykres czystości tonu:</h3>
+        <h3>Wykres czystości tonu:</h3>
         <img src="{{ url_for('static', filename=wykres_path) }}" style="max-width:600px;">
     {% endif %}
 
     <br><br>
-    <a href="{{ url_for('index') }}">⬅️ Powrót</a>
+    <a href="{{ url_for('index') }}">← Powrót</a>
 </body>
 </html>

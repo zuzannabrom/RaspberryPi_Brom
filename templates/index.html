@@ -3,44 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <title>Wirtualny nauczyciel wokalny</title>
+    <style>
+        /* ======== Pasek nawigacji ======== */
+        .navbar {
+            width: 100%;
+            background: linear-gradient(90deg, #000 0%, #111 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            width: 92%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-title {
+            font-size: 1.2rem;
+            color: #d4af37;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .nav-links a {
+            color: #f5f5f5;
+            text-decoration: none;
+            margin: 0 12px;
+            font-size: 0.95rem;
+            transition: color 0.25s, border-bottom 0.25s;
+            padding-bottom: 3px;
+        }
+        .nav-links a:hover {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+        .nav-links a.active {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+
+        /* ======== Styl strony ======== */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #0a0a0a 0%, #000 80%);
+            color: #f5f5f5;
+            text-align: center;
+            padding: 40px;
+            letter-spacing: 0.2px;
+        }
+        h1 {
+            color: #d4af37;
+            font-size: 2rem;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+        }
+        h2 {
+            color: #f7d774;
+            margin-top: 25px;
+        }
+        p {
+            color: #dcdcdc;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        button {
+            margin: 12px;
+            padding: 10px 26px;
+            border: 1px solid #d4af37;
+            background: linear-gradient(145deg, #1a1a1a, #0c0c0c);
+            color: #d4af37;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.25);
+        }
+        button:hover {
+            background: linear-gradient(145deg, #2a2a2a, #111);
+            color: #fff3b0;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+        }
+        audio {
+            margin-top: 10px;
+            border-radius: 6px;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            margin: 25px auto;
+            width: 60%;
+        }
+        a {
+            color: #f7d774;
+            text-decoration: none;
+        }
+        a:hover { color: #fff3b0; }
+    </style>
 </head>
 <body>
-    <h1>Nauczyciel wokalny</h1>
+
+    <!-- Pasek nawigacji -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-title">🎼 Analiza Śpiewu</div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="active">🏠 Strona główna</a>
+                <a href="{{ url_for('parametry2') }}">🎵 Analiza 1 dźwięku</a>
+                <a href="{{ url_for('parametry') }}">📊 Analiza parametrów</a>
+                <a href="{{ url_for('skala') }}">🎼 Skala muzyczna</a>
+            </div>
+        </div>
+    </nav>
+
+    <h1>🎙️ Wirtualny nauczyciel wokalny</h1>
+    <p>Witaj w interaktywnym narzędziu do analizy śpiewu! Możesz nagrać swój głos, posłuchać nagrania i przejść do szczegółowych analiz wokalnych.</p>
 
     {% if status == "nagrywa" %}
-        <p style="color:red;">Nagrywanie…</p>
+        <p style="color:#ff5555; font-weight:bold;">🔴 Nagrywanie w toku...</p>
     {% elif status == "done" %}
-        <p style="color:green;">Udało się super</p>
+        <p style="color:#80ff80; font-weight:bold;">✅ Nagranie zakończone pomyślnie!</p>
     {% endif %}
 
-    <form action="/nagraj" method="POST">
-        <button type="submit">Kliknij nagraj i śpiewaj przez 5 sekund</button>
+    <form action="{{ url_for('nagraj') }}" method="POST">
+        <button type="submit">🎤 Nagraj i śpiewaj przez 5 sekund</button>
     </form>
 
     {% if nagrany %}
-        <h2>Odtwórz swoje nagranie:</h2>
+        <h2>🔊 Odtwórz swoje nagranie:</h2>
         <audio controls>
             <source src="{{ url_for('static', filename='recordings/output.wav') }}" type="audio/wav">
             Twoja przeglądarka nie wspiera odtwarzacza audio.
         </audio>
 
-        <form action="/usun" method="POST" style="margin-top: 10px;">
+        <form action="{{ url_for('usun') }}" method="POST" style="margin-top: 10px;">
             <button type="submit" style="color:red;">🗑️ Usuń nagranie</button>
         </form>
     {% endif %}
 
+    <hr>
+
+    <h2>Wybierz, co chciałbyś zrobić:</h2>
+
     <form action="{{ url_for('parametry') }}" method="GET">
-    <button type="submit">🔍 Przejdź do parametrów</button>
+        <button type="submit">📊 Analiza parametrów (z artykułu)</button>
     </form>
 
-        <form action="{{ url_for('parametry2') }}" method="GET">
-    <button type="submit">🔍 Przejdź do parametrów 2</button>
+    <form action="{{ url_for('parametry2') }}" method="GET">
+        <button type="submit">🎵 Analiza jednego dźwięku</button>
     </form>
     
-    <form action="{{url_for('skala')}}" method="GET">
-    <button type="submit">🔍 Przejdź do skali</button>
+    <form action="{{ url_for('skala') }}" method="GET">
+        <button type="submit">🎼 Sprawdź swoją skalę głosu</button>
     </form>
 
-
+    <br><br>
+    <p style="font-size:0.9em; color:#aaa;">© 2025 Wirtualny Nauczyciel Wokalny • Projekt Raspberry Pi + Flask</p>
 </body>
 </html>

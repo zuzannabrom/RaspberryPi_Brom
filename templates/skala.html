@@ -2,68 +2,219 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Zakres wokalny (interaktywny)</title>
+    <title>Zakres wokalny</title>
     <style>
-        button {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 1.1rem;
+        /* ======== Pasek nawigacji ======== */
+        .navbar {
+            width: 100%;
+            background: linear-gradient(90deg, #000 0%, #111 100%);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
+        .nav-container {
+            width: 92%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-title {
+            font-size: 1.2rem;
+            color: #d4af37;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .nav-links a {
+            color: #f5f5f5;
+            text-decoration: none;
+            margin: 0 12px;
+            font-size: 0.95rem;
+            transition: color 0.25s, border-bottom 0.25s;
+            padding-bottom: 3px;
+        }
+        .nav-links a:hover {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+        .nav-links a.active {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+        @media (max-width: 700px) {
+            .nav-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .nav-links {
+                margin-top: 8px;
+            }
+            .nav-links a {
+                display: inline-block;
+                margin: 5px 8px;
+            }
+        }
+
+        /* ======== Styl główny ======== */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top, #0a0a0a 0%, #000 80%);
+            color: #f5f5f5;
+            text-align: center;
+            padding: 40px;
+            letter-spacing: 0.2px;
+        }
+
+        h1 {
+            color: #d4af37;
+            font-size: 1.8rem;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            color: #f7d774;
+            margin-top: 25px;
+            margin-bottom: 8px;
+        }
+
         select {
+            background: #111;
+            color: #f7d774;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-top: 8px;
             font-size: 1rem;
+        }
+
+        label {
+            margin: 0 10px;
+            color: #ddd;
+            font-size: 1rem;
+        }
+
+        button {
+            margin: 8px;
+            padding: 10px 24px;
+            border: 1px solid #d4af37;
+            background: linear-gradient(145deg, #1a1a1a, #0c0c0c);
+            color: #d4af37;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.25);
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #2a2a2a, #111);
+            color: #fff3b0;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            margin: 35px 0;
+        }
+
+        .feedback {
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        a {
+            color: #f7d774;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        a:hover { color: #fff3b0; }
+
+        .result-box {
+            margin-top: 30px;
+            background: #0d0d0d;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+            padding: 20px;
+            display: inline-block;
+            text-align: left;
+        }
+        .result-box p {
+            margin: 5px 0;
+            color: #eee;
         }
     </style>
 </head>
+
 <body>
-    <h1>🎤 Sprawdź swój zakres wokalny</h1>
+    <!-- ======== Pasek nawigacji ======== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-title">🎼 Analiza Śpiewu</div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}">🏠 Strona główna</a>
+                <a href="{{ url_for('parametry2') }}">🎵 Analiza 1 dźwięku</a>
+                <a href="{{ url_for('parametry') }}">📊 Analiza parametrów</a>
+                <a href="{{ url_for('skala') }}" class="active">🎼 Skala muzyczna</a>
+            </div>
+        </div>
+    </nav>
 
-    <!-- Wybór płci -->
-    <h3>Wybierz swoją płeć:</h3>
+    <h1>Zakres wokalny – interaktywna analiza</h1>
+
     <form method="POST" action="/analizuj_skale_manualnie">
-        <label>
-            <input type="radio" name="plec" value="kobieta" required> 👩 Kobieta
-        </label>
-        <label>
-            <input type="radio" name="plec" value="mezczyzna" required> 🧑 Mężczyzna
-        </label>
+        <h3>Wybierz swoją płeć:</h3>
+        <label><input type="radio" name="plec" value="kobieta" required> Kobieta</label>
+        <label><input type="radio" name="plec" value="mezczyzna" required> Mężczyzna</label>
 
-        <br><br>
-
-        <!-- Najniższa nuta -->
-        <h3>Najniższy dźwięk jaki potrafisz zaśpiewać:</h3>
-        <select name="nuta_niska" required>
+        <h3>Najniższy dźwięk:</h3>
+        <select id="nuta_niska_select" name="nuta_niska" required>
             {% for note in nuty %}
                 <option value="{{ note[1] }}">{{ note[0] }} ({{ note[1] }} Hz)</option>
             {% endfor %}
         </select>
-        <button type="button" onclick="playSelected('nuta_niska')">🔊 Odtwórz</button>
+        <button type="button" onclick="playSelected('nuta_niska_select')">Odtwórz</button>
+        <button type="button" onclick="sprawdzNute('nuta_niska_select', 'feedback_niska')">Sprawdź</button>
+        <div id="feedback_niska" class="feedback"></div>
 
-        <!-- Najwyższa nuta -->
-        <h3>Najwyższy dźwięk jaki potrafisz zaśpiewać:</h3>
-        <select name="nuta_wysoka" required>
+        <h3>Najwyższy dźwięk:</h3>
+        <select id="nuta_wysoka_select" name="nuta_wysoka" required>
             {% for note in nuty %}
                 <option value="{{ note[1] }}">{{ note[0] }} ({{ note[1] }} Hz)</option>
             {% endfor %}
         </select>
-        <button type="button" onclick="playSelected('nuta_wysoka')">🔊 Odtwórz</button>
+        <button type="button" onclick="playSelected('nuta_wysoka_select')">Odtwórz</button>
+        <button type="button" onclick="sprawdzNute('nuta_wysoka_select', 'feedback_wysoka')">Sprawdź</button>
+        <div id="feedback_wysoka" class="feedback"></div>
 
         <br><br>
-        <button type="submit">📈 Sprawdź mój zakres głosu</button>
+        <button type="submit">Sprawdź mój zakres głosu</button>
     </form>
 
     {% if wynik %}
-        <h2>📊 Twój zakres:</h2>
-        <p><strong>{{ wynik.nuta_niska }}</strong> ({{ wynik.niska_hz }} Hz) → 
-           <strong>{{ wynik.nuta_wysoka }}</strong> ({{ wynik.wysoka_hz }} Hz)</p>
-        <p><strong>Zakres:</strong> {{ wynik.zakres }} Hz</p>
-        <p><strong>Typ głosu:</strong> 🎶 {{ wynik.typ_glosu }}</p>
+    <div class="result-box">
+        <h3>Wyniki analizy:</h3>
+        <p><strong>Zakres:</strong> {{ wynik.nuta_niska }} ({{ wynik.niska_hz }} Hz) → {{ wynik.nuta_wysoka }} ({{ wynik.wysoka_hz }} Hz)</p>
+        <p><strong>Szerokość zakresu:</strong> {{ wynik.zakres }} Hz</p>
+        <p><strong>Typ głosu:</strong> {{ wynik.typ_glosu }}</p>
+    </div>
     {% endif %}
 
     <script>
-        function playSelected(selectName) {
-            const select = document.getElementsByName(selectName)[0];
+        function playSelected(selectId) {
+            const select = document.getElementById(selectId);
             const freq = parseFloat(select.value);
-
+            if (!freq) {
+                alert("Wybierz nutę!");
+                return;
+            }
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioCtx.createOscillator();
             oscillator.type = 'sine';
@@ -72,9 +223,50 @@
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + 1.5);
         }
+
+        async function sprawdzNute(selectId, feedbackId) {
+            const freq = parseFloat(document.getElementById(selectId).value);
+            if (!freq) {
+                alert("Wybierz nutę!");
+                return;
+            }
+
+            const feedback = document.getElementById(feedbackId);
+            feedback.innerText = "Nagrywanie... Zaśpiewaj tę nutę!";
+            feedback.style.color = "#ccc";
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            const chunks = [];
+
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: "audio/webm" });
+                const formData = new FormData();
+                formData.append("audio", blob, "check_note.webm");
+                formData.append("target_freq", freq);
+
+                feedback.innerText = "Analizowanie...";
+                try {
+                    const response = await fetch("/sprawdz_nute", {
+                        method: "POST",
+                        body: formData
+                    });
+                    const result = await response.json();
+                    feedback.innerText = result.feedback;
+                    feedback.style.color = result.feedback.includes("Idealnie") ? "green" : "orange";
+                } catch (err) {
+                    feedback.innerText = "Błąd analizy.";
+                    feedback.style.color = "red";
+                }
+            };
+
+            mediaRecorder.start();
+            setTimeout(() => mediaRecorder.stop(), 2000);
+        }
     </script>
 
     <br><br>
-    <a href="/">⬅️ Wróć</a>
+    <a href="{{ url_for('index') }}">← Powrót</a>
 </body>
 </html>
