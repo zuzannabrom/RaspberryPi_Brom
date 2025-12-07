@@ -3,182 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <title>🎼 Analiza śpiewu – Metoda ATSIP 2018</title>
-    <style>
-        /* ======== PASEK NAWIGACJI ======== */
-        .navbar {
-            width: 100%;
-            background: linear-gradient(90deg, #000 0%, #111 100%);
-            border-bottom: 1px solid rgba(212, 175, 55, 0.4);
-            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.15);
-            padding: 10px 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .nav-container {
-            width: 92%;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .nav-title {
-            font-size: 1.2rem;
-            color: #d4af37;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        .nav-links a {
-            color: #f5f5f5;
-            text-decoration: none;
-            margin: 0 12px;
-            font-size: 0.95rem;
-            transition: color 0.25s, border-bottom 0.25s;
-            padding-bottom: 3px;
-        }
-        .nav-links a:hover {
-            color: #f7d774;
-            border-bottom: 2px solid #d4af37;
-        }
-        .nav-links a.active {
-            color: #f7d774;
-            border-bottom: 2px solid #d4af37;
-        }
-        @media (max-width: 700px) {
-            .nav-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .nav-links {
-                margin-top: 8px;
-            }
-            .nav-links a {
-                display: inline-block;
-                margin: 5px 8px;
-            }
-        }
 
-        /* ====== GLOBAL STYLING ====== */
+    <style>
         body {
             font-family: 'Segoe UI', sans-serif;
             background: radial-gradient(circle at top, #0a0a0a 0%, #000 80%);
             color: #f5f5f5;
             text-align: center;
-            padding: 30px;
-            letter-spacing: 0.2px;
-        }
-        h1, h2, h3 {
-            color: #d4af37;
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.5px;
-        }
-        p {
-            color: #dcdcdc;
-            line-height: 1.6;
-            margin-bottom: 0.5rem;
+            padding: 30px 10px;
         }
 
-        /* ====== BUTTONS ====== */
-        button {
+        h1, h2, h3 { color: #d4af37; }
+        p { color: #dcdcdc; line-height: 1.6; }
+
+        /* NAVBAR */
+        .navbar {
+            width: 100%;
+            background: #000;
+            border-bottom: 1px solid rgba(212,175,55,0.4);
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(212, 175, 55, 0.15);
+        }
+
+        .nav-container {
+            width: 92%;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-title { font-size: 1.3rem; font-weight: 600; color: #d4af37; }
+        .nav-links a {
+            color: #eee;
+            text-decoration: none;
+            margin: 0 12px;
+            padding-bottom: 3px;
+            transition: 0.25s;
+        }
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #f7d774;
+            border-bottom: 2px solid #d4af37;
+        }
+
+        /* PRZYCISKI – lepszy układ ✨ */
+        .button-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        button, .file-label {
+            padding: 12px 26px;
             margin: 10px;
-            padding: 10px 26px;
-            border: 1px solid #d4af37;
-            background: linear-gradient(145deg, #1a1a1a, #0c0c0c);
-            color: #d4af37;
             font-size: 1rem;
-            border-radius: 8px;
+            border: 1px solid #d4af37;
+            background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+            color: #d4af37;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 0 6px rgba(212, 175, 55, 0.25);
-        }
-        button:hover {
-            background: linear-gradient(145deg, #2a2a2a, #111);
-            color: #fff3b0;
-            box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+            transition: 0.25s;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
         }
 
-        /* ====== TABLE ====== */
-        table {
-            margin: 30px auto;
-            border-collapse: collapse;
+        button:hover,
+        .file-label:hover {
+            background: #222;
+            color: #fff3b0;
+            box-shadow: 0 0 14px rgba(212, 175, 55, 0.6);
+            transform: scale(1.03);
+        }
+
+        input[type="file"] { display: none; }
+
+        /* PARAMETRY */
+        .param-container {
+            margin: 40px auto;
             width: 90%;
+            max-width: 1200px;
+            background: #0d0d0d;
+            border: 1px solid rgba(212,175,55,0.4);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 0 15px rgba(212,175,55,0.25);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: space-between;
+        }
+
+        .plot-box, .info-box { flex: 1 1 420px; }
+
+        img.plot {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(212,175,55,0.3);
+            border: 1px solid rgba(212,175,55,0.35);
+        }
+
+        /* HISTOGRAM */
+        .chart-summary {
+            width: 90%;
+            max-width: 1200px;
+            margin: 40px auto;
+            background: #0d0d0d;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(212,175,55,0.4);
+        }
+
+        .overall { font-size: 1.7rem; color: #d4af37; margin-top: 25px; }
+
+        audio { margin-top: 15px; width: 60%; }
+
+        /* ✨ NOWY LOADING BAR */
+        #loadingBox {
+            display: none;
+            margin: 25px auto;
+            width: 60%;
             background: #111;
+            border-radius: 10px;
+            border: 1px solid rgba(212,175,55,0.5);
+            padding: 15px;
+            color: #f7d774;
+        }
+
+        #loadingProgress {
+            height: 18px;
+            background: #333;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
-        }
-        th, td {
-            padding: 12px 16px;
-            border: 1px solid rgba(212, 175, 55, 0.25);
-        }
-        th {
-            background: linear-gradient(180deg, #1e1e1e, #111);
-            color: #f7d774;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        td {
-            color: #f5f5f5;
-        }
-        td:first-child {
-            font-weight: 500;
-            text-align: left;
-            color: #ffecb3;
-        }
-
-        /* ====== CONTAINERS ====== */
-        #chartContainer {
-            margin: 50px auto;
-            width: 90%;
-            background: #0d0d0d;
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-            padding: 20px 25px;
-        }
-        img.chart {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 1px solid rgba(212, 175, 55, 0.35);
-            box-shadow: 0 0 12px rgba(212, 175, 55, 0.15);
-        }
-
-        /* ====== OTHER ELEMENTS ====== */
-        .overall {
-            font-size: 1.5rem;
-            color: #d4af37;
-            font-weight: bold;
-            margin-top: 25px;
-            text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
-        }
-        input[type="file"] {
-            color: #d4af37;
             margin-top: 10px;
         }
-        hr {
-            border: 0;
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
-            margin: 35px 0;
+
+        #loadingFill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #d4af37, #f7d774);
         }
-        audio {
-            margin-top: 15px;
-            border-radius: 6px;
-            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
-        }
-        a {
-            color: #f7d774;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-        a:hover { color: #fff3b0; }
+
     </style>
 </head>
 
+
+
 <body>
-    <!-- ======== Pasek nawigacji ======== -->
+
+    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-title">🎼 Analiza Śpiewu</div>
@@ -191,110 +168,191 @@
         </div>
     </nav>
 
-    <h1>🎤 Analiza wykonania – Metoda ATSIP 2018</h1>
-    <p>
-        Porównaj swoje nagranie z <strong style="color:#f7d774;">ref.wav</strong> i sprawdź jakość wykonania
-        w siedmiu parametrach percepcyjnych wg modelu
-        <em style="color:#f5e1a4;">Perceptual Evaluation of Singing Quality (PESnQ)</em>.
-    </p>
+    <h1>🎤 Analiza wykonania – ATSIP 2018</h1>
 
-    <h3>🎙️ Nagraj lub wgraj wykonanie do analizy</h3>
 
-    <button onclick="startRecording()">🎙️ Rozpocznij nagrywanie</button>
-    <button onclick="stopRecording()">⏹️ Zatrzymaj</button>
 
-    <hr>
+    <!-- BUTTONS NOW IN A NICE ROW ✨ -->
+    <div class="button-row">
+        <button onclick="startRecording()">🎙️ Rozpocznij nagrywanie</button>
+        <button onclick="stopRecording()">⏹️ Zatrzymaj</button>
 
-    <p><strong>📁 Lub wybierz plik z dysku:</strong></p>
-    <input type="file" id="manualUpload" name="audioManual" accept="audio/*" onchange="handleManualUpload(this)">
+        <label for="manualUpload" class="file-label">📁 Wybierz plik</label>
+        <input type="file" id="manualUpload" accept="audio/*" onchange="handleManualUpload(this)">
+    </div>
 
     <audio id="recordedAudio" controls style="display:none;"></audio>
 
-    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/analizuj_parametry" style="margin-top:25px;">
+    <form method="POST" enctype="multipart/form-data" action="/analizuj_parametry" onsubmit="startLoading()">
         <input type="file" id="audioFile" name="audio" hidden>
         <button type="submit">📤 Wyślij nagranie do analizy</button>
     </form>
 
-    {% if analiza %}
-        <h2>📊 Wyniki analizy wokalnej</h2>
-        <p>Model ATSIP (2018) ocenia siedem kluczowych aspektów wykonania: intonację, rytm, vibrato, głośność, jakość barwy głosu, wymowę i zakres dynamiczny tonu.</p>
 
-        <table>
-            <tr>
-                <th>Parametr</th>
-                <th>Wynik [%]</th>
-                <th>Interpretacja</th>
-            </tr>
-            {% for klucz, wartosc in analiza.items() %}
-                {% if "Overall" not in klucz %}
-                    <tr>
-                        <td>{{ klucz }}</td>
-                        <td>{{ wartosc }}</td>
-                        <td>{{ interpretacje[klucz] }}</td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        </table>
-
-        <div id="chartContainer">
-            <h3>📉 Wyniki parametrów percepcyjnych</h3>
-            <p style="font-size:0.9em; color:#dcdcdc;">
-                Histogram w stylu publikacji <em style="color:#f7d774;">ATSIP 2018</em> – pokazuje względną jakość każdego z siedmiu aspektów śpiewu.
-            </p>
-            <img src="{{ url_for('static', filename=wykres_path) }}" alt="Histogram wyników ATSIP" class="chart">
-            <p style="font-size:0.85em; color:#aaa; margin-top:8px;">
-                Źródło metodologii: Gupta, C. et al., APSIPA Trans. Signal & Information Processing (2018)
-            </p>
+    <!-- ✨ NOWY LOADING BOX -->
+    <div id="loadingBox">
+        <h3>⏳ Trwa analiza nagrania…</h3>
+        <div id="loadingProgress">
+            <div id="loadingFill"></div>
         </div>
+    </div>
 
-        <p class="overall">⭐ Ocena ogólna: {{ analiza["⭐ Overall"] }}</p>
-    {% endif %}
 
-    <script>
-        let mediaRecorder;
-        let audioChunks = [];
 
-        async function startRecording() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
+{% if analiza %}
 
-            mediaRecorder.addEventListener("dataavailable", e => audioChunks.push(e.data));
-            mediaRecorder.addEventListener("stop", () => {
-                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                const audioUrl = URL.createObjectURL(audioBlob);
+    <h2>📊 Wyniki analizy</h2>
 
-                const audio = document.getElementById("recordedAudio");
-                audio.src = audioUrl;
-                audio.style.display = "block";
+    <!-- 1. INTONACJA -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🎵 Intonation</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_intonation_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Porównanie konturu wysokości dźwięku. Im bardziej zbliżone linie, tym lepsza intonacja.</p>
+        </div>
+    </div>
 
-                const file = new File([audioBlob], "input.wav", { type: "audio/wav" });
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                document.getElementById("audioFile").files = dataTransfer.files;
-            });
+    <!-- 2. RYTM -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>⏱️ Rhythm</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_rytm_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Analiza energii ataków dźwięku. Zgodność kształtów oznacza dobre odwzorowanie rytmu.</p>
+        </div>
+    </div>
 
-            mediaRecorder.start();
-        }
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                mediaRecorder.stop();
-            }
-        }
-        function handleManualUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
+    <!-- 3. VIBRATO -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🌊 Vibrato</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_vibrato_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Regularne falowanie wskazuje zdrowe, naturalne vibrato.</p>
+        </div>
+    </div>
+
+    <!-- 4. VOLUME -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🔊 Volume</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_volume_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Energia sygnału w czasie (RMS). Pokazuje dynamikę śpiewu.</p>
+        </div>
+    </div>
+
+    <!-- 5. VOICE QUALITY -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🧬 Voice Quality</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_vq_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Stosunek harmonicznych do szumu. Wyższy oznacza czystą barwę głosu.</p>
+        </div>
+    </div>
+
+    <!-- 6. PRONUNCIATION -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🗣️ Pronunciation</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_pron_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Różnice MFCC między wzorcem a nagraniem. Mniejsze oznaczają wyraźniejszą artykulację.</p>
+        </div>
+    </div>
+
+    <!-- 7. PITCH RANGE -->
+    <div class="param-container">
+        <div class="plot-box">
+            <h3>🔁 Pitch Dynamic Range</h3>
+            <img class="plot" src="{{ url_for('static', filename=wykres_range_path) }}">
+        </div>
+        <div class="info-box">
+            <p>Zakres wykorzystywanej wysokości dźwięku. Większy = bardziej ekspresyjny śpiew.</p>
+        </div>
+    </div>
+
+
+
+    <!-- HISTOGRAM -->
+    <div class="chart-summary">
+        <h3>📉 Histogram parametrów</h3>
+        <img class="plot" src="{{ url_for('static', filename=wykres_path) }}">
+    </div>
+
+    <p class="overall">⭐ Ocena ogólna: {{ analiza["⭐ Overall"] }}</p>
+
+{% endif %}
+
+
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    async function startRecording() {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: "audio/wav" });
+            const url = URL.createObjectURL(blob);
+
             const audio = document.getElementById("recordedAudio");
-            const audioUrl = URL.createObjectURL(file);
-            audio.src = audioUrl;
+            audio.src = url;
             audio.style.display = "block";
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            document.getElementById("audioFile").files = dataTransfer.files;
-        }
-    </script>
 
-    <br><br>
-    <a href="{{ url_for('index') }}">⬅️ Wróć do menu głównego</a>
+            const file = new File([blob], "input.wav", { type: "audio/wav" });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            document.getElementById("audioFile").files = dt.files;
+        };
+
+        mediaRecorder.start();
+    }
+
+    function stopRecording() {
+        if (mediaRecorder) mediaRecorder.stop();
+    }
+
+    function handleManualUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const audio = document.getElementById("recordedAudio");
+        audio.src = URL.createObjectURL(file);
+        audio.style.display = "block";
+
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById("audioFile").files = dt.files;
+    }
+
+    /* ✨ NOWY LOADING ANIMATED PROGRESS BAR */
+    function startLoading() {
+        document.getElementById("loadingBox").style.display = "block";
+
+        let fill = document.getElementById("loadingFill");
+        let width = 0;
+
+        let interval = setInterval(() => {
+            width += 2;
+            fill.style.width = width + "%";
+
+            if (width >= 100) clearInterval(interval);
+        }, 120);
+    }
+</script>
+
 </body>
 </html>

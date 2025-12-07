@@ -144,8 +144,75 @@ def sprawdz_nute():
     except Exception as e:
         return jsonify({"feedback": f"Błąd: {str(e)}"}), 500
 
-
 # ---------------------- ANALIZA: PARAMETRY ----------------------
+
+# === FUNKCJA INTERPRETACJI ===
+# dodałam 7.12 – musi być nad analiza_parametrow
+def interpretuj(value, opis):
+    """Prosta interpretacja wyniku w %."""
+    percent = value * 100
+
+    if percent >= 85:
+        return f"🌟 Bardzo dobra {opis} (wynik: {percent:.1f}%)"
+    elif percent >= 60:
+        return f"👍 Dobra {opis}, ale można ją poprawić (wynik: {percent:.1f}%)"
+    elif percent >= 30:
+        return f"⚠️ Słaba {opis} – wymaga pracy (wynik: {percent:.1f}%)"
+    else:
+        return f"❌ Bardzo niska {opis} (wynik: {percent:.1f}%)"
+
+
+# === (NOWA FUNKCJA) WYKRES INTONACJI ===
+# zmieniłam 7.12 – poprawiono pyin (3 wartości)
+def rysuj_wykres_intonacji(ref_path, user_path, output_file="intonation_plot.png"):
+    import librosa
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import os
+
+    # Wczytanie plików
+    y_ref, sr_ref = librosa.load(ref_path, sr=None)
+    y_usr, sr_usr = librosa.load(user_path, sr=None)
+
+    # PYIN zwraca 3 wartości — poprawione!
+    pitch_ref, _, _ = librosa.pyin(y_ref, fmin=50, fmax=2000, sr=sr_ref)   # zmieniłam 7.12
+    pitch_usr, _, _ = librosa.pyin(y_usr, fmin=50, fmax=2000, sr=sr_usr)   # zmieniłam 7.12
+
+    # Czyszczenie NaN
+    def clean(p):
+        p = np.array(p)
+        idx = np.where(~np.isnan(p))[0]
+        if len(idx) < 2:
+            return np.zeros_like(p)
+        return np.interp(np.arange(len(p)), idx, p[idx])
+
+    pitch_ref = clean(pitch_ref)
+    pitch_usr = clean(pitch_usr)
+
+    # Dopasowanie długości
+    L = min(len(pitch_ref), len(pitch_usr))
+    pitch_ref = pitch_ref[:L]
+    pitch_usr = pitch_usr[:L]
+    time = np.linspace(0, L / sr_ref, L)
+
+    # Rysowanie
+    plt.figure(figsize=(10, 3.2))
+    plt.plot(time, pitch_ref, label="Reference", color="gold")
+    plt.plot(time, pitch_usr, label="User", color="cyan")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Pitch [Hz]")
+    plt.title("Intonation – pitch contour comparison")
+    plt.grid(alpha=0.3)
+    plt.legend()
+
+    save_path = os.path.join("static", output_file)
+    plt.savefig(save_path, dpi=180, bbox_inches="tight")
+    plt.close()
+
+    return output_file
+
+
+# === ROUTE ANALIZY PARAMETRÓW ===
 @app.route("/analizuj_parametry", methods=["POST"])
 def analizuj_parametry():
     if "audio" not in request.files:
@@ -153,6 +220,7 @@ def analizuj_parametry():
 
     audio_file = request.files["audio"]
     os.makedirs(RECORD_DIR, exist_ok=True)
+
     user_path = os.path.join(RECORD_DIR, "user_param.wav")
     audio_file.save(user_path)
 
@@ -160,25 +228,45 @@ def analizuj_parametry():
 
     try:
         wynik, interpretacje = analiza_parametrow(ref_path, user_path)
+
+        # 1) Histogram
         wykres_file = rysuj_histogram_parametrow(wynik)
+
+        # 2) Intonacja (jedyne co generujesz dynamicznie)
+        wykres_intonation = rysuj_wykres_intonacji(ref_path, user_path)
+
+        # 3) Pozostałe wykresy – pliki JUŻ istnieją w static/
+        wykres_rytm = "rhythm_plot.png"
+        wykres_vibrato = "vibrato_plot.png"
+        wykres_volume = "volume_plot.png"
+        wykres_vq = "voice_quality_plot.png"
+        wykres_pron = "pronunciation_plot.png"
+        wykres_range = "pitch_range_plot.png"
+
+        # 4) Zwracamy WSZYSTKO do HTML
         return render_template(
             "parametry.html",
             analiza=wynik,
             interpretacje=interpretacje,
-            wykres_path=wykres_file
+            wykres_path=wykres_file,
+            wykres_intonation_path=wykres_intonation,
+            wykres_rytm_path=wykres_rytm,
+            wykres_vibrato_path=wykres_vibrato,
+            wykres_volume_path=wykres_volume,
+            wykres_vq_path=wykres_vq,
+            wykres_pron_path=wykres_pron,
+            wykres_range_path=wykres_range
         )
+
     except Exception as e:
         return f"Błąd analizy: {str(e)}", 500
 
 
+# === GŁÓWNA FUNKCJA ANALIZY PARAMETRÓW ATSIP ===
 def analiza_parametrow(ref_path, user_path):
-    """
-    Analiza śpiewu – metoda ATSIP (pełna wersja, 7 parametrów)
-    """
     import numpy as np
     import librosa
 
-    # --- Wczytanie audio ---
     y_ref, sr_ref = librosa.load(ref_path, sr=None)
     y_usr, sr_usr = librosa.load(user_path, sr=None)
 
@@ -186,12 +274,15 @@ def analiza_parametrow(ref_path, user_path):
     try:
         pitches_ref, mags_ref = librosa.piptrack(y=y_ref, sr=sr_ref)
         pitches_usr, mags_usr = librosa.piptrack(y=y_usr, sr=sr_usr)
+
         pitch_ref_vals = pitches_ref[mags_ref > np.median(mags_ref)]
         pitch_usr_vals = pitches_usr[mags_usr > np.median(mags_usr)]
+
         pitch_ref = float(np.median(pitch_ref_vals)) if len(pitch_ref_vals) > 0 else 0.0
         pitch_usr = float(np.median(pitch_usr_vals)) if len(pitch_usr_vals) > 0 else 0.0
     except Exception:
         pitch_ref = pitch_usr = 0.0
+
     Intonation = max(0, 1 - abs(pitch_ref - pitch_usr) / 100)
 
     # --- RHYTHM ---
@@ -201,6 +292,7 @@ def analiza_parametrow(ref_path, user_path):
         tempo_ref, tempo_usr = float(tempo_ref), float(tempo_usr)
     except Exception:
         tempo_ref = tempo_usr = 0.0
+
     Rhythm = max(0, 1 - abs(tempo_ref - tempo_usr) / 60)
 
     # --- VIBRATO ---
@@ -214,6 +306,7 @@ def analiza_parametrow(ref_path, user_path):
             return float(np.std(mean_pitch) / 30)
         except Exception:
             return 0.0
+
     vib_ref = vibrato_strength(y_ref, sr_ref)
     vib_usr = vibrato_strength(y_usr, sr_usr)
     Vibrato = max(0, 1 - abs(vib_ref - vib_usr))
@@ -224,6 +317,7 @@ def analiza_parametrow(ref_path, user_path):
         rms_usr = float(np.mean(librosa.feature.rms(y=y_usr)))
     except Exception:
         rms_ref = rms_usr = 0.0
+
     Volume = max(0, 1 - abs(rms_ref - rms_usr) / 0.1)
 
     # --- VOICE QUALITY ---
@@ -232,10 +326,14 @@ def analiza_parametrow(ref_path, user_path):
         S_usr = np.abs(librosa.stft(y_usr))
         harm_ref, per_ref = librosa.decompose.hpss(S_ref)
         harm_usr, per_usr = librosa.decompose.hpss(S_usr)
-        vq_ref = float(np.sum(harm_ref) / (np.sum(harm_ref) + np.sum(per_ref) + 1e-10))
-        vq_usr = float(np.sum(harm_usr) / (np.sum(harm_usr) + np.sum(per_usr) + 1e-10))
+
+        vq_ref = float(np.sum(harm_ref) /
+                       (np.sum(harm_ref) + np.sum(per_ref) + 1e-10))
+        vq_usr = float(np.sum(harm_usr) /
+                       (np.sum(harm_usr) + np.sum(per_usr) + 1e-10))
     except Exception:
         vq_ref = vq_usr = 0.0
+
     VoiceQuality = max(0, 1 - abs(vq_ref - vq_usr))
 
     # --- PRONUNCIATION ---
@@ -245,6 +343,7 @@ def analiza_parametrow(ref_path, user_path):
         diff = float(np.mean(np.abs(mfcc_ref - mfcc_usr)))
     except Exception:
         diff = 100.0
+
     Pronunciation = max(0, 1 - diff / 100)
 
     # --- PITCH DYNAMIC RANGE ---
@@ -257,18 +356,17 @@ def analiza_parametrow(ref_path, user_path):
             return float(np.max(vals) - np.min(vals))
         except Exception:
             return 0.0
+
     pdr_ref = pitch_range(y_ref, sr_ref)
     pdr_usr = pitch_range(y_usr, sr_usr)
     PitchDynamicRange = max(0, 1 - abs(pdr_ref - pdr_usr) / 300)
 
     # --- OCENA OGÓLNA ---
     Overall = np.mean([
-        Intonation, Rhythm, Vibrato,
-        Volume, VoiceQuality, Pronunciation,
-        PitchDynamicRange
+        Intonation, Rhythm, Vibrato, Volume,
+        VoiceQuality, Pronunciation, PitchDynamicRange
     ]) * 100.0
 
-    # --- WYNIKI ---
     wynik = {
         "🎵 Intonation": f"{Intonation * 100:.2f} %",
         "⏱️ Rhythm": f"{Rhythm * 100:.2f} %",
@@ -280,7 +378,6 @@ def analiza_parametrow(ref_path, user_path):
         "⭐ Overall": f"{Overall:.2f} / 100"
     }
 
-    # --- INTERPRETACJE ---
     interpretacje = {
         "🎵 Intonation": interpretuj(Intonation, "intonacja — trafność wysokości dźwięków"),
         "⏱️ Rhythm": interpretuj(Rhythm, "rytm — zgodność tempa z wzorcem"),
@@ -294,62 +391,39 @@ def analiza_parametrow(ref_path, user_path):
     return wynik, interpretacje
 
 
-def interpretuj(value, opis):
-    """Prosta interpretacja wyniku w %."""
-    percent = value * 100
-    if percent >= 85:
-        return f"🌟 Bardzo dobra {opis} (wynik: {percent:.1f}%)"
-    elif percent >= 60:
-        return f"👍 Dobra {opis}, ale można ją poprawić (wynik: {percent:.1f}%)"
-    elif percent >= 30:
-        return f"⚠️ Słaba {opis} – wymaga pracy (wynik: {percent:.1f}%)"
-    else:
-        return f"❌ Bardzo niska {opis} (wynik: {percent:.1f}%)"
-
-
+# === HISTOGRAM PARAMETRÓW ATSIP ===
 def rysuj_histogram_parametrow(wyniki, output_file="parametry_histogram.png"):
-    """Rysuje histogram w stylu artykułu ATSIP (2018)."""
     import matplotlib.pyplot as plt
     import matplotlib.ticker as mtick
     import os
 
     param_keys = [
         "🎵 Intonation", "⏱️ Rhythm", "🌊 Vibrato",
-        "🔊 Volume", "🧬 Voice Quality", "🗣️ Pronunciation",
-        "🔁 Pitch Dynamic Range"
+        "🔊 Volume", "🧬 Voice Quality",
+        "🗣️ Pronunciation", "🔁 Pitch Dynamic Range"
     ]
+
     labels = [k.split(" ", 1)[-1] for k in param_keys]
     values = [float(wyniki[k].replace(" %", "")) for k in param_keys]
 
     plt.figure(figsize=(9, 5))
-    bars = plt.bar(
-        labels,
-        values,
-        color="0.2",            # ciemnoszary
-        edgecolor="black",
-        width=0.6
-    )
 
-    # Skala i opisy
+    bars = plt.bar(labels, values, color="0.2", edgecolor="black", width=0.6)
+
     plt.ylim(0, 100)
     plt.ylabel("Ocena [%]", fontsize=11)
     plt.title("Performance of individual perceptual parameters (ATSIP 2018 model)",
               fontsize=12, pad=15)
+
     plt.xticks(rotation=45, ha="right", fontsize=10)
     plt.yticks(fontsize=10)
     plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter())
 
-    # Usunięcie siatki, styl publikacyjny
-    plt.grid(False)
-    plt.box(False)
-
-    # Wartości na słupkach (wewnątrz, białe)
     for bar, val in zip(bars, values):
         plt.text(
             bar.get_x() + bar.get_width() / 2,
             val / 2,
-            f"{val:.0f}%",
-            ha="center", va="center",
+            f"{val:.0f}%", ha="center", va="center",
             color="white", fontsize=10, fontweight="bold"
         )
 
@@ -357,8 +431,8 @@ def rysuj_histogram_parametrow(wyniki, output_file="parametry_histogram.png"):
     save_path = os.path.join("static", output_file)
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
-    return output_file
 
+    return output_file
 
 # ---------------------- ANALIZA: PARAMETRY 2 ----------------------
 @app.route("/analizuj_parametry2", methods=["POST"])

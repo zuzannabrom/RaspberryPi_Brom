@@ -119,17 +119,17 @@
         </div>
     </nav>
 
-    <h1>🎙️ Wirtualny nauczyciel wokalny</h1>
-    <p>Witaj w interaktywnym narzędziu do analizy śpiewu! Możesz nagrać swój głos, posłuchać nagrania i przejść do szczegółowych analiz wokalnych.</p>
+    <h1>Twój wirtualny nauczyciel wokalny</h1>
+    <p>Witaj w interaktywnym narzędziu do analizy śpiewu! Możesz nagrać swój głos, posłuchać nagrania i przejść do szczegółowych analiz Twojego głosu.</p>
 
     {% if status == "nagrywa" %}
         <p style="color:#ff5555; font-weight:bold;">🔴 Nagrywanie w toku...</p>
     {% elif status == "done" %}
-        <p style="color:#80ff80; font-weight:bold;">✅ Nagranie zakończone pomyślnie!</p>
+        <p style="color:#80ff80; font-weight:bold;">Koniec nagrywania</p>
     {% endif %}
 
     <form action="{{ url_for('nagraj') }}" method="POST">
-        <button type="submit">🎤 Nagraj i śpiewaj przez 5 sekund</button>
+        <button type="submit">Kliknij i śpiewaj przez 5 sekund</button>
     </form>
 
     {% if nagrany %}
@@ -140,20 +140,20 @@
         </audio>
 
         <form action="{{ url_for('usun') }}" method="POST" style="margin-top: 10px;">
-            <button type="submit" style="color:red;">🗑️ Usuń nagranie</button>
+            <button type="submit" style="color:red;"> Usuń nagranie</button>
         </form>
     {% endif %}
 
     <hr>
 
-    <h2>Wybierz, co chciałbyś zrobić:</h2>
+    <h2>Wybierz, co chciałbyś dzisiaj zrobić:</h2>
 
     <form action="{{ url_for('parametry') }}" method="GET">
-        <button type="submit">📊 Analiza parametrów (z artykułu)</button>
+        <button type="submit">📊 Analiza parametrów zaśpiewanego fragmentu</button>
     </form>
 
     <form action="{{ url_for('parametry2') }}" method="GET">
-        <button type="submit">🎵 Analiza jednego dźwięku</button>
+        <button type="submit">🎵 Analiza pojedynczego dźwięku</button>
     </form>
     
     <form action="{{ url_for('skala') }}" method="GET">
@@ -161,6 +161,6 @@
     </form>
 
     <br><br>
-    <p style="font-size:0.9em; color:#aaa;">© 2025 Wirtualny Nauczyciel Wokalny • Projekt Raspberry Pi + Flask</p>
+    <p style="font-size:0.9em; color:#aaa;">Zuzanna Brom: Wirtualny Nauczyciel Wokalny • Projekt inżynierski</p>
 </body>
 </html>
