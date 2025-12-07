@@ -54,6 +54,7 @@ def parametry2():
 @app.route("/skala")
 def skala():
     nuty = [
+        ("E2", 82.41),
         ("C3", 130.81), ("C#3", 138.59), ("D3", 146.83), ("D#3", 155.56), ("E3", 164.81),
         ("F3", 174.61), ("F#3", 185.00), ("G3", 196.00), ("G#3", 207.65), ("A3", 220.00),
         ("A#3", 233.08), ("H3", 246.94), ("C4", 261.63), ("C#4", 277.18), ("D4", 293.66),
@@ -74,6 +75,7 @@ def analizuj_skale_manualnie():
 
     # Znajdź odpowiadające nazwy nut
     nuty = [
+        ("E2", 82.41),
         ("C3", 130.81), ("C#3", 138.59), ("D3", 146.83), ("D#3", 155.56), ("E3", 164.81),
         ("F3", 174.61), ("F#3", 185.00), ("G3", 196.00), ("G#3", 207.65), ("A3", 220.00),
         ("A#3", 233.08), ("H3", 246.94), ("C4", 261.63), ("C#4", 277.18), ("D4", 293.66),
@@ -440,21 +442,40 @@ def analizuj_parametry2():
     if "audio" not in request.files:
         return "Brak pliku audio", 400
 
+    # Pobieramy częstotliwość z formularza
+    try:
+        target_freq = float(request.form.get("target_freq", 0))
+    except:
+        return "Błąd: brak częstotliwości docelowej!", 400
+
     audio_file = request.files["audio"]
-    target_freq = float(request.form.get("target_freq", 0.0))
+    filename = audio_file.filename.lower()
 
     os.makedirs(RECORD_DIR, exist_ok=True)
+
     webm_path = os.path.join(RECORD_DIR, "parametry2_input.webm")
     wav_path = os.path.join(RECORD_DIR, "parametry2_input.wav")
-    audio_file.save(webm_path)
+
+    # Jeśli wgrywany jest WAV → nie konwertujemy
+    if filename.endswith(".wav"):
+        audio_file.save(wav_path)
+
+    # Jeśli WEBM → konwersja jak wcześniej
+    elif filename.endswith(".webm"):
+        audio_file.save(webm_path)
+        AudioSegment.from_file(webm_path, format="webm").export(wav_path, format="wav")
+
+    else:
+        return "Obsługiwane formaty: .wav, .webm", 400
 
     try:
-        AudioSegment.from_file(webm_path, format="webm").export(wav_path, format="wav")
         analiza, feedback, wykres_path = analiza_czystosci(wav_path, target_freq)
-        return render_template("parametry2.html", analiza=analiza, feedback=feedback, wykres_path=wykres_path)
+        return render_template("parametry2.html",
+                               analiza=analiza,
+                               feedback=feedback,
+                               wykres_path=wykres_path)
     except Exception as e:
         return f"Błąd analizy: {str(e)}", 500
-
 
 # ---------------------- ANALIZA: CZYSTOŚĆ ----------------------
 def analiza_czystosci(path, target_freq):
